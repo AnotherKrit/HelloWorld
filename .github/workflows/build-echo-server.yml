@@ -1,8 +1,7 @@
 name: Build echo-server
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 permissions: read-all
 
@@ -38,7 +37,10 @@ jobs:
           # Use docker to simpliy local testing.
           registry: ${{ env.IMAGE_REGISTRY }}
           username: upgradkrithikavenugopal
+          # username: ${{ env.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
+          # username: ${{ github.actor }}
+          # password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -74,8 +76,10 @@ jobs:
       digest: ${{ needs.build.outputs.digest }}
       # Use name rather than env variable because env are not available for reusable workflows.
       registry-username: upgradkrithikavenugopal
+      #registry-username: ${{ github.actor }}
     secrets:
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+      #registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   run:
     needs: [build, provenance]
@@ -88,6 +92,8 @@ jobs:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ env.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
+          # username: ${{ github.actor }}
+          # password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run it
         env:
           IMAGE: ${{ needs.build.outputs.image }}
