@@ -1,7 +1,8 @@
 name: Build echo-server
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 permissions: read-all
 
