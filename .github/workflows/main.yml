@@ -1,9 +1,7 @@
-# .github/workflows/main.yml
 name: Build echo-server
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 permissions: read-all
 
@@ -14,9 +12,10 @@ defaults:
 env:
   IMAGE_REGISTRY: docker.io
   IMAGE_NAME: ${{ github.event.repository.name }}-echo-server
-  
+  REGISTRY_USERNAME: upgradkrithikavenugopal
+
 jobs:
-  build-and-push:
+  build:
     outputs:
       image: ${{ steps.image.outputs.image }}
       digest: ${{ steps.build.outputs.digest }}
@@ -24,73 +23,83 @@ jobs:
       packages: write # for uploading attestations.
       contents: read
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871    #v4.2.1
+      - name: Checkout the repository
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v2.3.4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2.0.0
 
-    - name: Authenticate Docker
-      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  #v3.3.0
-      with:
-        registry: ${{ env.IMAGE_REGISTRY }}
-        username: upgradkrithikavenugopal
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Authenticate Docker
+        # uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
+        uses: docker/login-action@v3
+        with:
+          # Use docker to simpliy local testing.
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: upgradkrithikavenugopal
+          # username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+          # username: ${{ github.actor }}
+          # password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata (tags, labels) for Docker
-      id: meta
-      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81   #v5.5.1
-      with:
-        images: ${{ env.IMAGE_REGISTRY }}/upgradkrithikavenugopal/${{ env.IMAGE_NAME }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@69f6fc9d46f2f8bf0d5491e4aabe0bb8c6a4678a # v4.0.1
+        with:
+          images: ${{ env.IMAGE_REGISTRY }}/${{ env.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
-      id: build
-      with:
-        push: true
-        platforms: linux/amd64,linux/arm64
-        context: "{{defaultContext}}:images/echo-server"
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@e551b19e49efd4e98792db7592c17c09b89db8d8 # v3.0.0
+        id: build
+        with:
+          push: true
+          platforms: linux/amd64,linux/arm64
+          context: "{{defaultContext}}:images/echo-server"
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
-    - name: Output image
-      id: image
-      run: |
-          image_name="${{ env.IMAGE_REGISTRY }}/upgradkrithikavenugopal/${{ env.IMAGE_NAME }}"
+      - name: Output image
+        id: image
+        run: |
+          image_name="${IMAGE_REGISTRY}/${REGISTRY_USERNAME}/${IMAGE_NAME}"
           echo "image=$image_name" >> "$GITHUB_OUTPUT"
 
   provenance:
-    needs: [build-and-push]
+    needs: [build]
     permissions:
       actions: read # for detecting the Github Actions environment.
       id-token: write # for creating OIDC tokens for signing.
       packages: write # for uploading attestations.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
     with:
-      image: ${{ needs.build-and-push.outputs.image }}
-      digest: ${{ needs.build-and-push.outputs.digest }}
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+      # Use name rather than env variable because env are not available for reusable workflows.
       registry-username: upgradkrithikavenugopal
-
+      #registry-username: ${{ github.actor }}
     secrets:
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+      #registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   run:
-    needs: [build-and-push, provenance]
+    needs: [build, provenance]
     runs-on: ubuntu-latest
     steps:
       - name: Authenticate Docker
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v3.3.0
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
         with:
+        # Use docker to simpliy local testing.
           registry: ${{ env.IMAGE_REGISTRY }}
-          username: upgradkrithikavenugopal
+          username: ${{ env.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
-
+          # username: ${{ github.actor }}
+          # password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run it
         env:
-          IMAGE: ${{ needs.build-and-push.outputs.image }}
-          DIGEST: ${{ needs.build-and-push.outputs.digest }}
+          IMAGE: ${{ needs.build.outputs.image }}
+          DIGEST: ${{ needs.build.outputs.digest }}
         run: |
           docker pull "${IMAGE}@${DIGEST}"
+
+          # See https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions for log types.
           echo "::warning ${IMAGE}@${DIGEST}"
