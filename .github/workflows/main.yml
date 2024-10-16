@@ -4,12 +4,25 @@ name: Build echo-server
 on:
   push:
     branches: [ main ]
+
+permissions: read-all
+
+defaults:
+  run:
+    shell: bash
+
 env:
   IMAGE_REGISTRY: docker.io
   IMAGE_NAME: ${{ github.event.repository.name }}-echo-server
   
 jobs:
   build-and-push:
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+    permissions:
+      packages: write # for uploading attestations.
+      contents: read
     runs-on: ubuntu-latest
 
     steps:
