@@ -1,12 +1,12 @@
 # .github/workflows/main.yml
-name: Build and Push Docker Image
+name: Build echo-server
 
 on:
   push:
     branches: [ main ]
 env:
   IMAGE_REGISTRY: docker.io
-  IMAGE_NAME: ${{ github.event.repository.name }}-py-hello-world
+  IMAGE_NAME: ${{ github.event.repository.name }}-echo-server
   
 jobs:
   build-and-push:
@@ -38,7 +38,7 @@ jobs:
       with:
         push: true
         platforms: linux/amd64,linux/arm64
-        context: "{{defaultContext}}:images/py-hello-world"
+        context: "{{defaultContext}}:images/echo-server"
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 
