@@ -1,38 +1,84 @@
-name: Flask CI
+# .github/workflows/main.yml
+name: Build and Push Docker Image
 
 on:
   push:
-    branches: [main]
-
+    branches: [ main ]
+env:
+  IMAGE_REGISTRY: docker.io
+  IMAGE_NAME: ${{ github.event.repository.name }}-py-hello-world
+  
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871    #v4.2.1
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@dc47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+    - name: Authenticate Docker
+      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  #v3.3.0
+      with:
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81   #v5.5.1
+      with:
+        images: ${{ env.IMAGE_REGISTRY }}/${{ secrets.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+      id: build
+      with:
+        push: true
+        platforms: linux/amd64,linux/arm64
+        context: "{{defaultContext}}:images/py-hello-world"
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Output image
+      id: image
+      run: |
+          image_name="${env.IMAGE_REGISTRY}/${{ secrets.REGISTRY_USERNAME }}/${env.IMAGE_NAME}"
+          echo "image=$image_name" >> "$GITHUB_OUTPUT"
+
+  provenance:
+    needs: [build-and-push]
+    permissions:
+      actions: read # for detecting the Github Actions environment.
+      id-token: write # for creating OIDC tokens for signing.
+      packages: write # for uploading attestations.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    with:
+      image: ${{ needs.build-and-push.outputs.image }}
+      digest: ${{ needs.build-and-push.outputs.digest }}
+      # Use name rather than env variable because env are not available for reusable workflows.
+      registry-username: ${{ secrets.REGISTRY_USERNAME }}
+
+    secrets:
+      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+
+  run:
+    needs: [build-and-push, provenance]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate Docker
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v3.3.0
         with:
-          python-version: 3.8 
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Create virtual environment
+      - name: Run it
+        env:
+          IMAGE: ${{ needs.build-and-push.outputs.image }}
+          DIGEST: ${{ needs.build-and-push.outputs.digest }}
         run: |
-          python -m venv venv
-          source venv/bin/activate
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Print debugging information
-        run: |
-          echo "Python Version: $(python --version)"
-          echo "Working Directory: $(pwd)"
-          echo "Contents of Working Directory: $(ls -l)"
-          echo "Contents of site-packages: $(ls -l venv/lib/python*/site-packages)"
-
-      - name: Run tests
-        run: python test_hello.py
+          docker pull "${IMAGE}@${DIGEST}"
+          echo "::warning ${IMAGE}@${DIGEST}"
