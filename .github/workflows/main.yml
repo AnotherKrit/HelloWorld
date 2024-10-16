@@ -58,10 +58,9 @@ jobs:
     with:
       image: ${{ needs.build-and-push.outputs.image }}
       digest: ${{ needs.build-and-push.outputs.digest }}
-      # Use name rather than env variable because env are not available for reusable workflows.
-      registry-username: ${{ secrets.REGISTRY_USERNAME }}
 
     secrets:
+      registry-username: ${{ secrets.REGISTRY_USERNAME }}
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 
   run:
