@@ -1,4 +1,4 @@
-name: Build echo-server
+name: Build Py Hello World
 
 on:
   push:
@@ -12,7 +12,7 @@ defaults:
 
 env:
   IMAGE_REGISTRY: docker.io
-  IMAGE_NAME: ${{ github.event.repository.name }}-echo-server
+  IMAGE_NAME: ${{ github.event.repository.name }}-py-hello-world
   REGISTRY_USERNAME: upgradkrithikavenugopal
 
 jobs:
@@ -52,7 +52,7 @@ jobs:
         with:
           push: true
           platforms: linux/amd64,linux/arm64
-          context: "{{defaultContext}}:images/echo-server"
+          context: "{{defaultContext}}:images/py-hello-world"
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
