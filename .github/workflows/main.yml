@@ -74,7 +74,6 @@ jobs:
       registry-username: upgradkrithikavenugopal
 
     secrets:
-      registry-username: upgradkrithikavenugopal
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 
   run:
