@@ -23,14 +23,14 @@ jobs:
       uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  #v3.3.0
       with:
         registry: ${{ env.IMAGE_REGISTRY }}
-        username: ${{ secrets.REGISTRY_USERNAME }}
+        username: upgradkrithikavenugopal
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81   #v5.5.1
       with:
-        images: ${{ env.IMAGE_REGISTRY }}/${{ secrets.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}
+        images: ${{ env.IMAGE_REGISTRY }}/upgradkrithikavenugopal/${{ env.IMAGE_NAME }}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
@@ -45,7 +45,7 @@ jobs:
     - name: Output image
       id: image
       run: |
-          image_name="${{ env.IMAGE_REGISTRY }}/${{ secrets.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}"
+          image_name="${{ env.IMAGE_REGISTRY }}/upgradkrithikavenugopal/${{ env.IMAGE_NAME }}"
           echo "image=$image_name" >> "$GITHUB_OUTPUT"
 
   provenance:
@@ -61,7 +61,7 @@ jobs:
       registry-username: upgradkrithikavenugopal
 
     secrets:
-      registry-username: ${{ secrets.REGISTRY_USERNAME }}
+      registry-username: upgradkrithikavenugopal
       registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 
   run:
@@ -72,7 +72,7 @@ jobs:
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v3.3.0
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
+          username: upgradkrithikavenugopal
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Run it
