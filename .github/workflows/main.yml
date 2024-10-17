@@ -62,12 +62,13 @@ jobs:
 
       - shell: bash
         run: |
+          image="${IMAGE_REGISTRY}/${REGISTRY_USERNAME}/${IMAGE_NAME}"
           set -e
           cosign sign --yes \
             -a "repo=${{ github.repository }}" \
             -a "workflow=${{ github.workflow }}" \
             -a "ref=${{ github.sha }}" \
-            ${{ steps.build.outputs.image }}@${{ steps.build.outputs.digest }}
+            ${{ image}}@${{ steps.build.outputs.digest }}
 
       - name: Output image
         id: image
