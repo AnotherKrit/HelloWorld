@@ -23,6 +23,7 @@ jobs:
     permissions:
       packages: write # for uploading attestations.
       contents: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
